@@ -17,15 +17,18 @@ public class RotaPedidos {
 			public void configure() throws Exception {
 				
 				from("file:pedidos?delay=5s&noop=true")
+					.setProperty("pedidoId", xpath("/pedido/id/text()"))
+					.setProperty("clienteId", xpath("/pedido/pagamento/email-titular/text()"))
 					.split()
 						.xpath("/pedido/itens/item")
 						.log("${body}")
 					.filter()
 						.xpath("/item/formato[text()='EBOOK']")
+						.setProperty("ebookId", xpath("/item/livro/codigo/text()"))
 						.marshal().xmljson()
 					.log("${body}")
 					.setHeader(Exchange.HTTP_METHOD, HttpMethods.GET)
-					.setHeader(Exchange.HTTP_QUERY, constant("ebookid=ARQ&pedidoId=2451256&clienteId=edgar.b@abc.com"))
+					.setHeader(Exchange.HTTP_QUERY, simple("ebookid=${property.ebookId}&pedidoId=${property.pedidoId}&clienteId=${property.clienteId}"))
 				.to("http4://localhost:8080/webservices/ebook/item");
 				
 			}
